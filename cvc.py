@@ -57,9 +57,12 @@ class CVParser:
                                '  </h2>\n')
 
             for item in section.findall('item'):
+                title = item.find('title').find(self.lang).text
+                if item.find('title').attrib.keys().__contains__('years'):
+                    title = item.find('title').attrib['years'] + ' ' + title
                 self.outfile.write('  <div class="popupcontainer">\n'
                                    '    <div class="popuptitle">\n'
-                                   '      ' + item.find('title').find(self.lang).text + '\n'
+                                   '      ' + title + '\n'
                                    '    </div>\n')
                 content = item.find('content')
                 if content is not None:
