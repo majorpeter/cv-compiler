@@ -95,6 +95,9 @@ class CVParser:
 
                 self.outfile.write('  </div>\n')
 
+            for content in section.findall('content'):
+                self.outfile.write(content.find(self.lang).text)
+
     def __del__(self):
         self.finish_file()
 
