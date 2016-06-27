@@ -5,9 +5,8 @@ import os.path
 import xml.etree.ElementTree as eTree
 from time import gmtime,strftime
 
-
 class CVParser:
-    outfile = sys.stdout    # TODO open actual file
+    outfile = None
     xmlroot = None
     lang = 'en'
     html_lang = 'en-GB'
@@ -17,13 +16,17 @@ class CVParser:
     update_time = strftime("%Y-%m-%d", gmtime())
     tags = {}
 
-    def __init__(self, infilepath, csspath):
+    def __init__(self, infilepath, outfile, css_array=[], js_array=[]):
         tree = eTree.parse(infilepath)
         self.xmlroot = tree.getroot()
         if self.xmlroot.tag != 'cv':
             exit_error('Not a valid CV xml!')
+        if outfile is not None:
+            self.outfile = open(outfile, 'w')
+        else:
+            self.outfile = sys.stdout # use default output otherwise
 
-        self.start_file(csspath)
+        self.start_file(css_array, js_array)
 
     def write_file(self):
         self.name = self.xmlroot.find('name').text
@@ -101,15 +104,17 @@ class CVParser:
     def __del__(self):
         self.finish_file()
 
-    def start_file(self, css):
+    def start_file(self, css_array=[], js_array=[]):
         self.outfile.write('<!DOCTYPE html>\n'
                            '<html lang="' + self.html_lang + '">\n'
                            '<head>\n'
                            '  <meta charset="utf-8">\n'
                            '  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
                            '  <title>' + self.name + '</title>\n')
-        if css:
-            self.outfile.write('  <link href="' + css +'" rel="stylesheet" type="text/css" />\n')
+        for css in css_array:
+            self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
+        for js in js_array:
+            self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
         self.outfile.write('</head>\n'
                            '<body>\n')
 
@@ -144,32 +149,61 @@ def get_paramsetting(name):
 
 def print_usage():
     sys.stdout.write('Usage:\n'
-                     '  cyc.py <input-xml-file> [<output-folder>] [--language=<en|hu|...>]\n'
-                     '      [--image-path=<path>] [--css=<path>]')
+                     '  cyc.py <input-xml-file> <output-file> [--language=<en|hu|...>]\n'
+                     '      [--image-path=<path>] [--css=<path>] [--js=<path>]\n'
+                     '\n'
+                     '  Image path, css & js are used in html to link to files, relative to\n'
+                     '  the webservers root folder.\n'
+                     '\n'
+                     '  You may use --css1, --css2 etc. and --js1 etc. to include multiple files\n'
+                     '  in the <head> of the document. There is no option to write inline css or\n'
+                     '  js in the command line.\n\n')
 
 
 def exit_error(message, _print_usage):
+    sys.stderr.write('Error: ' + message + '\n\n')
+
     if _print_usage:
         print_usage()
-
-    sys.stderr.write(message + '\n')
     exit(-1)
 
 
 def main():
     if sys.argv.__len__() > 1:
+        output_file = None
         input_file = sys.argv[1]
         if not os.path.isfile(input_file):
             exit_error('Input file does not exist!', 1)
 
-        css = get_paramsetting('css')
+        if sys.argv.__len__() > 2:
+            if not sys.argv[2].startswith('-'):
+                output_file = sys.argv[2]
 
-        parser = CVParser(input_file, css)
+        css_array = []
+        css = get_paramsetting('css')
+        if css: css_array.append(css)
+        i = 1
+        while True:
+            css = get_paramsetting('css%d' % i)
+            if not css: break
+            css_array.append(css)
+            i += 1
+
+        js_array = []
+        js = get_paramsetting('js')
+        if js: css_array.append(js)
+        i = 1
+        while True:
+            js = get_paramsetting('js%d' % i)
+            if not js: break
+            js_array.append(js)
+            i += 1
+
+        parser = CVParser(input_file, output_file, css_array, js_array)
 
         lang = get_paramsetting('language')
         if lang:
             parser.lang = lang
-
 
         image_path = get_paramsetting('image-path')
         if image_path:
