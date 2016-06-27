@@ -12,6 +12,7 @@ class CVParser:
     lang = 'en'
     html_lang = 'en-GB'
     image_path=''
+    uid = 100
     name = ''
     update_time = strftime("%Y-%m-%d", gmtime())
     tags = {}
@@ -56,21 +57,41 @@ class CVParser:
             self.outfile.write('    ' + section.find('title').find(self.lang).text + '\n'
                                '  </h2>\n')
 
-            for item in section.findall('item'):
+            for item in section.findall('item') + section.findall('li'):
                 title = item.find('title').find(self.lang).text
-                if item.find('title').attrib.keys().__contains__('years'):
+
+                if 'years' in item.find('title').attrib:
                     title = item.find('title').attrib['years'] + ' ' + title
+
+                title_tag = 'popuptitle'
+                if item.tag == 'li':
+                    title_tag += ' li'
+
+                if 'id' in item.attrib:
+                    uid = item.attrib['id']
+                else:
+                    uid = self.uid.__str__()
+                    self.uid+=1
+
                 self.outfile.write('  <div class="popupcontainer">\n'
-                                   '    <div class="popuptitle">\n'
+                                   '    <div id="' + uid + '" class="' + title_tag + '">\n'
                                    '      ' + title + '\n'
                                    '    </div>\n')
                 content = item.find('content')
                 if content is not None:
                     content = content.find(self.lang)
                     if content is not None:
-                        self.outfile.write('<div class="popupcontent">\n'
-                                           '      ' + self.content_string_from_element(content) + '\n'
-                                           '</div>\n')
+                        self.outfile.write('    <div class="popupcontent">\n'
+                                           '      ' + self.content_string_from_element(content) + '\n')
+                        if item.find('image') is not None:
+                            self.outfile.write('      <div class="images">\n')
+                            for image in item.findall('image'):
+                                self.outfile.write('        <a href="' + self.image_path + image.find('url').text +
+                                           '" class="lightbox" title="' + image.find(self.lang).text +
+                                           '"><img src="' + self.image_path + image.find('url').text +
+                                           '" style="max-width: 100px; max-height: 100px; margin: 3px;"/></a>')
+                            self.outfile.write('      </div>\n')
+                        self.outfile.write('    </div>\n')
 
                 self.outfile.write('  </div>\n')
 
@@ -116,11 +137,12 @@ def get_paramsetting(name):
     for arg in sys.argv:
         if arg.startswith('--' + name + '='):
             return arg[name.__len__() + 3:]
-    return ''
+    return None
 
 def print_usage():
     sys.stdout.write('Usage:\n'
-                     '  cyc.py <input-xml-file> [<output-folder>] [--image-path=<path>] [--css=<path>]')
+                     '  cyc.py <input-xml-file> [<output-folder>] [--language=<en|hu|...>]\n'
+                     '      [--image-path=<path>] [--css=<path>]')
 
 
 def exit_error(message, _print_usage):
@@ -141,8 +163,13 @@ def main():
 
         parser = CVParser(input_file, css)
 
+        lang = get_paramsetting('language')
+        if lang:
+            parser.lang = lang
+
+
         image_path = get_paramsetting('image-path')
-        if image_path.__len__() > 0:
+        if image_path:
             parser.image_path = image_path
 
         parser.write_file()
