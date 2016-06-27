@@ -10,13 +10,14 @@ class CVParser:
     xmlroot = None
     lang = 'en'
     html_lang = 'en-GB'
+    headless = False
     image_path=''
     uid = 100
     name = ''
     update_time = strftime("%Y-%m-%d", gmtime())
     tags = {}
 
-    def __init__(self, infilepath, outfile, css_array=[], js_array=[]):
+    def __init__(self, infilepath, outfile, is_headless=False, css_array=[], js_array=[]):
         tree = eTree.parse(infilepath)
         self.xmlroot = tree.getroot()
         if self.xmlroot.tag != 'cv':
@@ -26,6 +27,7 @@ class CVParser:
         else:
             self.outfile = sys.stdout # use default output otherwise
 
+        self.headless = is_headless
         self.start_file(css_array, js_array)
 
     def write_file(self):
@@ -105,22 +107,24 @@ class CVParser:
         self.finish_file()
 
     def start_file(self, css_array=[], js_array=[]):
-        self.outfile.write('<!DOCTYPE html>\n'
-                           '<html lang="' + self.html_lang + '">\n'
-                           '<head>\n'
-                           '  <meta charset="utf-8">\n'
-                           '  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
-                           '  <title>' + self.name + '</title>\n')
-        for css in css_array:
-            self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
-        for js in js_array:
-            self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
-        self.outfile.write('</head>\n'
-                           '<body>\n')
+        if not self.headless:
+            self.outfile.write('<!DOCTYPE html>\n'
+                               '<html lang="' + self.html_lang + '">\n'
+                               '<head>\n'
+                               '  <meta charset="utf-8">\n'
+                               '  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
+                               '  <title>' + self.name + '</title>\n')
+            for css in css_array:
+                self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
+            for js in js_array:
+                self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
+            self.outfile.write('</head>\n'
+                               '<body>\n')
 
     def finish_file(self):
-        self.outfile.write('</body>\n'
-                           '</html>\n')
+        if not self.headless:
+            self.outfile.write('</body>\n'
+                               '</html>\n')
 
     def write_header(self):
         self.outfile.write('  <p align="right">' + self.update_time + '</p>\n')
@@ -149,7 +153,7 @@ def get_paramsetting(name):
 
 def print_usage():
     sys.stdout.write('Usage:\n'
-                     '  cyc.py <input-xml-file> <output-file> [--language=<en|hu|...>]\n'
+                     '  cyc.py <input-xml-file> <output-file> [--format=<html|html-headless>] [--language=<en|hu|...>]\n'
                      '      [--image-path=<path>] [--css=<path>] [--js=<path>]\n'
                      '\n'
                      '  Image path, css & js are used in html to link to files, relative to\n'
@@ -179,6 +183,14 @@ def main():
             if not sys.argv[2].startswith('-'):
                 output_file = sys.argv[2]
 
+        headless = False
+        outformat = get_paramsetting('format')
+        if outformat:
+            if outformat == 'html-headless':
+                headless = True
+            elif outformat != 'html':
+                exit_error('Invalid format \'%s\'' % outformat)
+
         css_array = []
         css = get_paramsetting('css')
         if css: css_array.append(css)
@@ -199,7 +211,7 @@ def main():
             js_array.append(js)
             i += 1
 
-        parser = CVParser(input_file, output_file, css_array, js_array)
+        parser = CVParser(input_file, output_file, headless, css_array, js_array)
 
         lang = get_paramsetting('language')
         if lang:
