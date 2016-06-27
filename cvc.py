@@ -38,14 +38,13 @@ class CVParser:
         for i in self.xmlroot.findall('desc'):
             self.write_desc(i.find(self.lang).text)
 
-        for contact in ['phone', 'mail', 'linkedin', 'fbook']:
-            element = self.xmlroot.find(contact)
-            if element:
+        for contact in self.xmlroot.findall('contact'):
+            if contact:
                 icon = 0
-                icon_element = element.find('icon')
+                icon_element = contact.find('icon')
                 if icon_element is not None:
                     icon = icon_element.text
-                self.write_contact_info(element.find(self.lang).text, element.find('val').text, icon)
+                self.write_contact_info(contact.find(self.lang).text, contact.find('val').text, icon)
 
         for tag in self.xmlroot.findall('tag'):
             self.tags[tag.find('name').text] = ({
