@@ -73,7 +73,7 @@ class CVParser:
                 title = item.find('title').find(self.lang).text
 
                 if 'years' in item.find('title').attrib:
-                    title = item.find('title').attrib['years'] + ' ' + title
+                    title = item.find('title').attrib['years'].replace('\\nbsp', '&nbsp;') + ' ' + title
 
                 title_tag = 'popuptitle'
                 if item.tag == 'li':
