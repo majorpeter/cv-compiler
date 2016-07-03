@@ -16,6 +16,7 @@ class CVParser:
     name = ''
     update_time = strftime("%Y-%m-%d", gmtime())
     tags = {}
+    images = []
 
     def __init__(self, infilepath, outfile, is_headless=False, css_array=[], js_array=[]):
         tree = eTree.parse(infilepath)
@@ -33,6 +34,8 @@ class CVParser:
     def write_file(self):
         self.name = self.xmlroot.find('name').text
 
+        for i in self.xmlroot.findall('profile-img'):
+            self.images.append(self.image_path + i.find('url').text)
         self.write_header()
 
         for i in self.xmlroot.findall('desc'):
@@ -135,10 +138,12 @@ class CVParser:
 
     def write_header(self):
         self.outfile.write('  <p align="right">' + self.update_time + '</p>\n')
+        if self.images.__len__() > 0:
+            self.outfile.write('<a href="' + self.images[0] + '" class="lightbox"><img src="' + self.images[0] + '" class="profimg"/></a>\n')
         self.outfile.write('  <h1>' + self.name + '</h1>\n')
 
     def write_desc(self, text):
-        self.outfile.write('  <span class="profile">' + text + '</span>\n')
+        self.outfile.write('  <span class="profile">' + text + '</span><br/>\n')
 
     def write_contact_info(self, key, value, image, href = None):
         self.outfile.write('  <p class="contact">\n')
