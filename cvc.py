@@ -44,7 +44,15 @@ class CVParser:
                 icon_element = contact.find('icon')
                 if icon_element is not None:
                     icon = icon_element.text
-                self.write_contact_info(contact.find(self.lang).text, contact.find('val').text, icon)
+
+                href = None
+                type_element = contact.find('type')
+                if type_element is not None:
+                    if type_element.text == 'email':
+                        href = 'mailto:' + contact.find('val').text
+                    elif type_element.text == 'url':
+                        href = contact.find('val').text
+                self.write_contact_info(contact.find(self.lang).text, contact.find('val').text, icon, href)
 
         for tag in self.xmlroot.findall('tag'):
             self.tags[tag.find('name').text] = ({
@@ -132,10 +140,12 @@ class CVParser:
     def write_desc(self, text):
         self.outfile.write('  <span class="profile">' + text + '</span>\n')
 
-    def write_contact_info(self, key, value, image):
+    def write_contact_info(self, key, value, image, href = None):
         self.outfile.write('  <p class="contact">\n')
         if image:
             self.outfile.write('    <img class="cv-contact" title="' + key + '" src="' + self.image_path + image + '"/>\n')
+        if href:
+            value = '<a href="' + href + '">' + value + '</a>'
         self.outfile.write('    ' + key + ': <strong>' + value + '</strong>\n'
                            '  </p>\n')
 
