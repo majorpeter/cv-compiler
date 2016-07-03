@@ -78,25 +78,27 @@ class CVParser:
                 if 'years' in item.find('title').attrib:
                     title = item.find('title').attrib['years'].replace('\\nbsp', '&nbsp;') + ' ' + title
 
-                title_tag = 'popuptitle'
+                title_class = 'popuptitle'
                 if item.tag == 'li':
-                    title_tag += ' li'
+                    title_class += ' li'
 
                 if 'id' in item.attrib:
                     uid = item.attrib['id']
                 else:
                     uid = self.uid.__str__()
                     self.uid+=1
+                content = item.find('content')
+                if content is not None:
+                    title_class += ' toggle'
 
-                self.outfile.write('  <div class="popupcontainer">\n'
-                                   '    <div id="' + uid + '" class="' + title_tag + '">\n'
+                self.outfile.write('  <div class="popupcontainer" data-id="' + uid + '">\n'
+                                   '    <div id="' + uid + '" class="' + title_class + '">\n'
                                    '      ' + title + '\n'
                                    '    </div>\n')
-                content = item.find('content')
                 if content is not None:
                     content = content.find(self.lang)
                     if content is not None:
-                        self.outfile.write('    <div class="popupcontent">\n'
+                        self.outfile.write('    <div class="popupcontent" id="pd' + uid + '" style="display: none;">\n'
                                            '      ' + self.content_string_from_element(content) + '\n')
                         if item.find('image') is not None:
                             self.outfile.write('      <div class="images">\n')
