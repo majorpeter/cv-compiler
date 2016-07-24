@@ -42,7 +42,7 @@ class CVParser:
         for i in self.xmlroot.findall('desc'):
             self.write_desc(i.find(self.lang).text)
 
-        self.outfile.write('<div id="contact-info">\n')
+        self.outfile.write('  <div id="contact-info">\n')
         for contact in self.xmlroot.findall('contact'):
             if contact:
                 icon = 0
@@ -58,7 +58,7 @@ class CVParser:
                     elif type_element.text == 'url':
                         href = contact.find('val').text
                 self.write_contact_info(contact.find(self.lang).text, contact.find('val').text, icon, href)
-        self.outfile.write('</div>\n')
+        self.outfile.write('  </div>\n')
 
         for tag in self.xmlroot.findall('tag'):
             self.tags[tag.find('name').text] = ({
@@ -165,13 +165,13 @@ class CVParser:
         self.outfile.write('  <span class="profile">' + text + '</span><br/>\n')
 
     def write_contact_info(self, key, value, image, href = None):
-        self.outfile.write('  <p class="contact">\n')
+        self.outfile.write('    <p class="contact">\n')
         if image:
-            self.outfile.write('    <img class="cv-contact" title="' + key + '" src="' + self.image_path + image + '"/>\n')
+            self.outfile.write('      <img class="cv-contact" title="' + key + '" src="' + self.image_path + image + '"/>\n')
         if href:
             value = '<a href="' + href + '">' + value + '</a>'
-        self.outfile.write('    ' + key + ': <strong>' + value + '</strong>\n'
-                           '  </p>\n')
+        self.outfile.write('      ' + key + ': <strong>' + value + '</strong>\n'
+                           '    </p>\n')
 
     def content_string_from_element(self, element):
         s = eTree.tostring(element).decode(encoding='utf-8')
