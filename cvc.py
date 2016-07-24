@@ -78,6 +78,9 @@ class CVParser:
             for item in section.findall('item') + section.findall('li'):
                 title_element = item.find('title')
                 title = title_element.find(self.lang).text
+                title_prefix = ''
+                title_postfix = ''
+                list_item = False
 
                 if 'years' in title_element.attrib:
                     title = title_element.attrib['years'].replace('\\nbsp', '&nbsp;') + ' ' + title
@@ -85,15 +88,23 @@ class CVParser:
                 title_class = 'popuptitle'
                 if item.tag == 'li':
                     title_class += ' li'
+                    list_item = True
 
                 if 'id' in item.attrib:
                     uid = item.attrib['id']
                 else:
                     uid = self.uid.__str__()
                     self.uid+=1
+
                 content = item.find('content')
                 if content is not None:
                     title_class += ' toggle'
+                    if list_item:
+                        title_prefix += '<span class="toggle"></span>'
+                    else:
+                        title_prefix += '<span class="toggle hide"></span>'
+                elif list_item:
+                    title_prefix += '&bull;&nbsp;'
 
                 if 'image' in title_element.attrib:
                     image = title_element.attrib['image']
@@ -101,16 +112,16 @@ class CVParser:
                         image_full = title_element.attrib['image-full']
                     else:
                         image_full = title_element.attrib['image']
-                    title += '<a title="'+ html.escape(title) + '" href="' + self.image_path + image_full + '">' \
+                    title_postfix += '<a title="'+ html.escape(title) + '" href="' + self.image_path + image_full + '">' \
                               '<img class="section" src="' + self.image_path + image + '"></a>'
 
                 for tag in item.findall('tag'):
-                    title += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
+                    title_postfix += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
                              html.escape(self.tags[tag.text]['desc']) + '">' + self.tags[tag.text]['title'] + '</span>'
 
                 self.outfile.write('  <div class="popupcontainer" data-id="' + uid + '">\n'
                                    '    <div id="' + uid + '" class="' + title_class + '">\n'
-                                   '      ' + title + '\n'
+                                   '      ' + title_prefix + title + title_postfix + '\n'
                                    '    </div>\n')
                 if content is not None:
                     content = content.find(self.lang)
@@ -186,7 +197,7 @@ def get_paramsetting(name):
 
 def print_usage():
     sys.stdout.write('Usage:\n'
-                     '  cyc.py <input-xml-file> <output-file> [--format=<html|html-headless>] [--language=<en|hu|...>]\n'
+                     '  cvc.py <input-xml-file> <output-file> [--format=<html|html-headless>] [--language=<en|hu|...>]\n'
                      '      [--image-path=<path>] [--css=<path>] [--js=<path>]\n'
                      '\n'
                      '  Image path, css & js are used in html to link to files, relative to\n'
