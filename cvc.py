@@ -4,6 +4,7 @@ import sys
 import os.path
 import xml.etree.ElementTree as eTree
 from time import gmtime,strftime
+import html
 
 class CVParser:
     outfile = None
@@ -90,6 +91,10 @@ class CVParser:
                 content = item.find('content')
                 if content is not None:
                     title_class += ' toggle'
+
+                for tag in item.findall('tag'):
+                    title += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
+                             html.escape(self.tags[tag.text]['desc']) + '">' + self.tags[tag.text]['title'] + '</span>'
 
                 self.outfile.write('  <div class="popupcontainer" data-id="' + uid + '">\n'
                                    '    <div id="' + uid + '" class="' + title_class + '">\n'
