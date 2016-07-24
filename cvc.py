@@ -76,10 +76,11 @@ class CVParser:
                                '  </h2>\n')
 
             for item in section.findall('item') + section.findall('li'):
-                title = item.find('title').find(self.lang).text
+                title_element = item.find('title')
+                title = title_element.find(self.lang).text
 
-                if 'years' in item.find('title').attrib:
-                    title = item.find('title').attrib['years'].replace('\\nbsp', '&nbsp;') + ' ' + title
+                if 'years' in title_element.attrib:
+                    title = title_element.attrib['years'].replace('\\nbsp', '&nbsp;') + ' ' + title
 
                 title_class = 'popuptitle'
                 if item.tag == 'li':
@@ -93,6 +94,15 @@ class CVParser:
                 content = item.find('content')
                 if content is not None:
                     title_class += ' toggle'
+
+                if 'image' in title_element.attrib:
+                    image = title_element.attrib['image']
+                    if 'image-full' in title_element.attrib:
+                        image_full = title_element.attrib['image-full']
+                    else:
+                        image_full = title_element.attrib['image']
+                    title += '<a title="'+ html.escape(title) + '" href="' + self.image_path + image_full + '">' \
+                              '<img class="section" src="' + self.image_path + image + '"></a>'
 
                 for tag in item.findall('tag'):
                     title += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
