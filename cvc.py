@@ -42,6 +42,7 @@ class CVParser:
         for i in self.xmlroot.findall('desc'):
             self.write_desc(i.find(self.lang).text)
 
+        self.outfile.write('<div id="contact-info">\n')
         for contact in self.xmlroot.findall('contact'):
             if contact:
                 icon = 0
@@ -57,6 +58,7 @@ class CVParser:
                     elif type_element.text == 'url':
                         href = contact.find('val').text
                 self.write_contact_info(contact.find(self.lang).text, contact.find('val').text, icon, href)
+        self.outfile.write('</div>\n')
 
         for tag in self.xmlroot.findall('tag'):
             self.tags[tag.find('name').text] = ({
