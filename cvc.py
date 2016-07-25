@@ -92,9 +92,11 @@ class CVParser:
 
                 if 'id' in item.attrib:
                     uid = item.attrib['id']
+                    has_real_uid = True
                 else:
                     uid = self.uid.__str__()
                     self.uid+=1
+                    has_real_uid = False
 
                 content = item.find('content')
                 if content is not None:
@@ -118,6 +120,9 @@ class CVParser:
                 for tag in item.findall('tag'):
                     title_postfix += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
                              html.escape(self.tags[tag.text]['desc']) + '">' + self.tags[tag.text]['title'] + '</span>'
+
+                if has_real_uid:
+                    title_postfix += '<a class="anchor" href="#' + html.escape(uid) + '">&para;</a>'
 
                 self.outfile.write('  <div class="popupcontainer" data-id="' + uid + '">\n'
                                    '    <div id="' + uid + '" class="' + title_class + '">\n'
