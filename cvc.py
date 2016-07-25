@@ -114,8 +114,9 @@ class CVParser:
                         image_full = title_element.attrib['image-full']
                     else:
                         image_full = title_element.attrib['image']
-                    title_postfix += '<a title="'+ html.escape(title) + '" href="' + self.image_path + image_full + '">' \
-                              '<img class="section" src="' + self.image_path + image + '"></a>'
+                    title_postfix += '<a class="lightbox" title="'+ html.escape(title) + '" href="' + \
+                                self.image_path + image_full + '">' \
+                               '<img class="section" src="' + self.image_path + image + '"></a>'
 
                 for tag in item.findall('tag'):
                     title_postfix += '<span class="tag ' + html.escape(tag.text) + '" title="' +\
