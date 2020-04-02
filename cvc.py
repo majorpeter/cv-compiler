@@ -12,6 +12,7 @@ class CVParser:
     outfile = None
     xmlroot = None
     lang = 'en'
+    compact = False
     html_lang = 'en-GB'
     headless = False
     image_path=''
@@ -21,7 +22,7 @@ class CVParser:
     tags = {}
     images = []
 
-    def __init__(self, infilepath, outfile, is_headless=False, css_array=[], js_array=[]):
+    def __init__(self, infilepath, outfile, is_headless=False, css_array=None, js_array=None):
         tree = eTree.parse(infilepath)
         self.xmlroot = tree.getroot()
         if self.xmlroot.tag != 'cv':
@@ -134,7 +135,8 @@ class CVParser:
                 if content is not None:
                     content = content.find(self.lang)
                     if content is not None:
-                        self.outfile.write('    <div class="popupcontent" id="pd' + uid + '" style="display: none;">\n'
+                        hide_str = ' style="display: none;"' if self.compact else ''
+                        self.outfile.write('    <div class="popupcontent" id="pd' + uid + '"' + hide_str + '>\n'
                                            '      ' + self.content_string_from_element(content) + '\n')
                         if item.find('image') is not None:
                             self.outfile.write('      <div class="images">\n')
@@ -154,7 +156,7 @@ class CVParser:
     def __del__(self):
         self.finish_file()
 
-    def start_file(self, css_array=[], js_array=[]):
+    def start_file(self, css_array=None, js_array=None):
         if not self.headless:
             self.outfile.write('<!DOCTYPE html>\n'
                                '<html lang="' + self.html_lang + '">\n'
@@ -162,10 +164,12 @@ class CVParser:
                                '  <meta charset="utf-8">\n'
                                '  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />\n'
                                '  <title>' + self.name + '</title>\n')
-            for css in css_array:
-                self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
-            for js in js_array:
-                self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
+            if css_array is not None:
+                for css in css_array:
+                    self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
+            if js_array is not None:
+                for js in js_array:
+                    self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
             self.outfile.write('</head>\n'
                                '<body>\n')
 
@@ -209,6 +213,7 @@ def main():
     parser.add_argument('output', nargs='?', default=None, help='Destination file path')
     parser.add_argument('--format', choices=['html', 'html-headless'], help='Output file format')
     parser.add_argument('--language', choices=['en', 'hu'], default='en', help='Language of exported data')
+    parser.add_argument('--compact', action='store_true', help='Hide descriptions by default')
     parser.add_argument('--image-path', default='', help='Relative path of images in exported HTML')
     parser.add_argument('--css', nargs='*', help='Link this CSS in <head>')
     parser.add_argument('--js', nargs='*', help='Link this CSS in <head>')
@@ -220,6 +225,7 @@ def main():
     headless = (args.format == 'html-headless')
     parser = CVParser(args.input, args.output, headless, args.css, args.js)
     parser.lang = args.language
+    parser.compact = args.compact
     parser.image_path = args.image_path
 
     parser.write_file()
