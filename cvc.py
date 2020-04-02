@@ -4,17 +4,34 @@ import sys
 import os.path
 import xml.etree.ElementTree as eTree
 from argparse import ArgumentParser
+from enum import Enum
 from time import gmtime,strftime
 import html
 
 
+class Format(Enum):
+    Html = 0
+    Html_Headless = 1,
+    Html_Printable = 2
+
+    @staticmethod
+    def from_str(s):
+        if s == 'html':
+            return Format.Html
+        elif s == 'html-headless':
+            return Format.Html_Headless
+        elif s == 'html-printable':
+            return Format.Html_Printable
+        raise ValueError('Invalid value: %s' % s)
+
+
 class CVParser:
+
     outfile = None
     xmlroot = None
     lang = 'en'
     compact = False
     html_lang = 'en-GB'
-    headless = False
     image_path=''
     uid = 100
     name = ''
@@ -22,7 +39,7 @@ class CVParser:
     tags = {}
     images = []
 
-    def __init__(self, infilepath, outfile, is_headless=False, css_array=None, js_array=None):
+    def __init__(self, infilepath, outfile, format, css_array=None, js_array=None):
         tree = eTree.parse(infilepath)
         self.xmlroot = tree.getroot()
         if self.xmlroot.tag != 'cv':
@@ -32,7 +49,7 @@ class CVParser:
         else:
             self.outfile = sys.stdout  # use default output otherwise
 
-        self.headless = is_headless
+        self.format = format
         self.start_file(css_array, js_array)
 
     def write_file(self):
@@ -138,7 +155,7 @@ class CVParser:
                         hide_str = ' style="display: none;"' if self.compact else ''
                         self.outfile.write('    <div class="popupcontent" id="pd' + uid + '"' + hide_str + '>\n'
                                            '      ' + self.content_string_from_element(content) + '\n')
-                        if item.find('image') is not None:
+                        if item.find('image') is not None and self.format != Format.Html_Printable:
                             self.outfile.write('      <div class="images">\n')
                             for image in item.findall('image'):
                                 self.outfile.write('        <a href="' + self.image_path + image.find('url').text +
@@ -157,7 +174,7 @@ class CVParser:
         self.finish_file()
 
     def start_file(self, css_array=None, js_array=None):
-        if not self.headless:
+        if self.format != Format.Html_Headless:
             self.outfile.write('<!DOCTYPE html>\n'
                                '<html lang="' + self.html_lang + '">\n'
                                '<head>\n'
@@ -169,12 +186,12 @@ class CVParser:
                     self.outfile.write('  <link href="' + css + '" rel="stylesheet" type="text/css" />\n')
             if js_array is not None:
                 for js in js_array:
-                    self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>')
+                    self.outfile.write('  <script type="text/javascript" src="' + js + '"></script>\n')
             self.outfile.write('</head>\n'
                                '<body>\n')
 
     def finish_file(self):
-        if not self.headless:
+        if self.format != Format.Html_Headless:
             self.outfile.write('</body>\n'
                                '</html>\n')
 
@@ -211,7 +228,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('input', help='Input XML for compilation')
     parser.add_argument('output', nargs='?', default=None, help='Destination file path')
-    parser.add_argument('--format', choices=['html', 'html-headless'], help='Output file format')
+    parser.add_argument('--format', choices=['html', 'html-headless', 'html-printable'], default='html', help='Output file format')
     parser.add_argument('--language', choices=['en', 'hu'], default='en', help='Language of exported data')
     parser.add_argument('--compact', action='store_true', help='Hide descriptions by default')
     parser.add_argument('--image-path', default='', help='Relative path of images in exported HTML')
@@ -222,8 +239,7 @@ def main():
     if not os.path.isfile(args.input):
         exit_error('Input file does not exist!')
 
-    headless = (args.format == 'html-headless')
-    parser = CVParser(args.input, args.output, headless, args.css, args.js)
+    parser = CVParser(args.input, args.output, Format.from_str(args.format), args.css, args.js)
     parser.lang = args.language
     parser.compact = args.compact
     parser.image_path = args.image_path
