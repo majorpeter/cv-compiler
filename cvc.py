@@ -3,8 +3,10 @@
 import sys
 import os.path
 import xml.etree.ElementTree as eTree
+from argparse import ArgumentParser
 from time import gmtime,strftime
 import html
+
 
 class CVParser:
     outfile = None
@@ -27,7 +29,7 @@ class CVParser:
         if outfile is not None:
             self.outfile = open(outfile, 'w')
         else:
-            self.outfile = sys.stdout # use default output otherwise
+            self.outfile = sys.stdout  # use default output otherwise
 
         self.headless = is_headless
         self.start_file(css_array, js_array)
@@ -195,85 +197,33 @@ class CVParser:
         s = s[s.index('>') + 1 : s.rfind('<')]
         return s
 
-def get_paramsetting(name):
-    for arg in sys.argv:
-        if arg.startswith('--' + name + '='):
-            return arg[name.__len__() + 3:]
-    return None
 
-def print_usage():
-    sys.stdout.write('Usage:\n'
-                     '  cvc.py <input-xml-file> <output-file> [--format=<html|html-headless>] [--language=<en|hu|...>]\n'
-                     '      [--image-path=<path>] [--css=<path>] [--js=<path>]\n'
-                     '\n'
-                     '  Image path, css & js are used in html to link to files, relative to\n'
-                     '  the webservers root folder.\n'
-                     '\n'
-                     '  You may use --css1, --css2 etc. and --js1 etc. to include multiple files\n'
-                     '  in the <head> of the document. There is no option to write inline css or\n'
-                     '  js in the command line.\n\n')
-
-
-def exit_error(message, _print_usage):
+def exit_error(message):
     sys.stderr.write('Error: ' + message + '\n\n')
-
-    if _print_usage:
-        print_usage()
     exit(-1)
 
 
 def main():
-    if sys.argv.__len__() > 1:
-        output_file = None
-        input_file = sys.argv[1]
-        if not os.path.isfile(input_file):
-            exit_error('Input file does not exist!', 1)
+    parser = ArgumentParser()
+    parser.add_argument('input', help='Input XML for compilation')
+    parser.add_argument('output', nargs='?', default=None, help='Destination file path')
+    parser.add_argument('--format', choices=['html', 'html-headless'], help='Output file format')
+    parser.add_argument('--language', choices=['en', 'hu'], default='en', help='Language of exported data')
+    parser.add_argument('--image-path', default='', help='Relative path of images in exported HTML')
+    parser.add_argument('--css', nargs='*', help='Link this CSS in <head>')
+    parser.add_argument('--js', nargs='*', help='Link this CSS in <head>')
+    args = parser.parse_args()
 
-        if sys.argv.__len__() > 2:
-            if not sys.argv[2].startswith('-'):
-                output_file = sys.argv[2]
+    if not os.path.isfile(args.input):
+        exit_error('Input file does not exist!')
 
-        headless = False
-        outformat = get_paramsetting('format')
-        if outformat:
-            if outformat == 'html-headless':
-                headless = True
-            elif outformat != 'html':
-                exit_error('Invalid format \'%s\'' % outformat)
+    headless = (args.format == 'html-headless')
+    parser = CVParser(args.input, args.output, headless, args.css, args.js)
+    parser.lang = args.language
+    parser.image_path = args.image_path
 
-        css_array = []
-        css = get_paramsetting('css')
-        if css: css_array.append(css)
-        i = 1
-        while True:
-            css = get_paramsetting('css%d' % i)
-            if not css: break
-            css_array.append(css)
-            i += 1
-
-        js_array = []
-        js = get_paramsetting('js')
-        if js: css_array.append(js)
-        i = 1
-        while True:
-            js = get_paramsetting('js%d' % i)
-            if not js: break
-            js_array.append(js)
-            i += 1
-
-        parser = CVParser(input_file, output_file, headless, css_array, js_array)
-
-        lang = get_paramsetting('language')
-        if lang:
-            parser.lang = lang
-
-        image_path = get_paramsetting('image-path')
-        if image_path:
-            parser.image_path = image_path
-
-        parser.write_file()
-    else:
-        exit_error('No input file set!', 1)
+    parser.write_file()
 
 
-main()
+if __name__ == '__main__':
+    main()
